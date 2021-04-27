@@ -17,13 +17,13 @@ Description: a simple example that do:
 AsyncTelegram myBot;
 
 #ifndef STASSID
-#define STASSID "SSID"
-#define STAPSK  "PASS"
+#define STASSID "*"
+#define STAPSK  "*"
 #endif
 
 const char* ssid = STASSID;
 const char* pass = STAPSK;
-const char* token = "token";
+const char* token = "*";
 
 const uint8_t LED = LED_BUILTIN;
 // const uint8_t LED = 6;
@@ -31,8 +31,10 @@ const uint8_t LED = LED_BUILTIN;
 void setup() {
   // initialize the Serial
   Serial.begin(115200);
+  delay(1000);
+  Serial.println("");
   Serial.println("Starting TelegramBot...");
-
+  Serial.println("Connecting WIFI...");
   WiFi.setAutoConnect(true);   
   WiFi.mode(WIFI_STA);
 
@@ -43,6 +45,7 @@ void setup() {
     delay(500);
   }
 
+  Serial.println("\nWIFI connected.");
   // To ensure certificate validation, WiFiClientSecure needs time updated
   // myBot.setInsecure(false);
   myBot.setClock("CET-1CEST,M3.5.0,M10.5.0/3");
@@ -77,7 +80,7 @@ void loop() {
       myBot.sendMessage(msg, "Light is now OFF");       // notify the sender
     }
     else if (msg.text.equalsIgnoreCase("\/time")) {        // if the received message is "LIGHT OFF"...
-      Serial.print(DateTime.toUTCString());
+      Serial.println(DateTime.toUTCString());
       String reply;
       reply = DateTime.toUTCString();
       myBot.sendMessage(msg, reply);
