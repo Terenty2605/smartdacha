@@ -9,6 +9,8 @@
 AsyncTelegram myBot;
 
 const uint8_t LED = LED_BUILTIN;
+const uint8_t LED_GREEN = 12;
+const uint8_t LED_RED = 15;
 
 #define TOKEN_LEN 200
 char token[TOKEN_LEN] = "token";
@@ -120,6 +122,12 @@ void startWiFi(boolean showParams = false) {
 
 void setup() {
   Serial.begin(115200);
+  pinMode(LED, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
+  digitalWrite(LED, HIGH); // turn off the led (inverted logic!)
+  digitalWrite(LED_RED, HIGH); // turn on the red led 
+
   while (!Serial) {
     delay(100);
   }
@@ -138,8 +146,9 @@ void setup() {
   Serial.print("\nTest Telegram connection... ");
   myBot.begin() ? Serial.println("OK") : Serial.println("NOK");
 
-  pinMode(LED, OUTPUT);
-  digitalWrite(LED, HIGH); // turn off the led (inverted logic!)
+  digitalWrite(LED_RED, LOW); // turn on the red led 
+  digitalWrite(LED_GREEN, HIGH); // turn on the green led 
+
 
 }
 
