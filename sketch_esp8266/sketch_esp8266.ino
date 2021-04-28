@@ -1,71 +1,160 @@
-/*
-Name:        lightBot.ino
-Created:     20/06/2020
-Author:      Tolentino Cotesta <cotestatnt@yahoo.com>
-Description: a simple example that do:
-             1) parse incoming messages
-             2) if "LIGHT ON" message is received, turn on the onboard LED
-             3) if "LIGHT OFF" message is received, turn off the onboard LED
-             4) otherwise, reply to sender with a welcome message
+#include <FS.h>
 
-*/
-
+#include <WC_AP_HTML.h>
+#include <WiFiConnect.h>
+#include <WiFiConnectParam.h>
 #include <ESPDateTime.h>
-#include <Arduino.h>
-#include "AsyncTelegram.h"
+#include <AsyncTelegram.h>
 
 AsyncTelegram myBot;
 
-#ifndef STASSID
-#define STASSID "*"
-#define STAPSK  "*"
-#endif
-
-const char* ssid = STASSID;
-const char* pass = STAPSK;
-const char* token = "*";
-
 const uint8_t LED = LED_BUILTIN;
-// const uint8_t LED = 6;
 
-void setup() {
-  // initialize the Serial
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("");
-  Serial.println("Starting TelegramBot...");
-  Serial.println("Connecting WIFI...");
-  WiFi.setAutoConnect(true);   
-  WiFi.mode(WIFI_STA);
+#define TOKEN_LEN 200
+char token[TOKEN_LEN] = "token";
 
-  WiFi.begin(ssid, pass);
-  delay(500);
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print('.');
-    delay(500);
+int json_doc_size = 1024;
+
+WiFiConnectParam custom_token("token", "token", token, TOKEN_LEN);
+
+WiFiConnect wc;
+
+bool configNeedsSaving = false;
+
+void saveConfigCallback() {
+  Serial.println("Should save config");
+  configNeedsSaving = true;
+}
+
+void configModeCallback(WiFiConnect *mWiFiConnect) {
+  Serial.println("Entering Access Point");
+}
+
+/* Save our custom parameters */
+void saveConfiguration() {
+  configNeedsSaving = false;
+  if (!SPIFFS.begin()) {
+    Serial.println("UNABLE to open SPIFFS");
+    return;
   }
 
-  Serial.println("\nWIFI connected.");
-  // To ensure certificate validation, WiFiClientSecure needs time updated
-  // myBot.setInsecure(false);
+  strcpy(token, custom_token.getValue());
+
+  Serial.println("saving config");
+  DynamicJsonDocument doc(json_doc_size);
+
+  doc["token"] = token;
+
+  File configFile = SPIFFS.open("/conf.json", "w");
+
+  if (!configFile) {
+    Serial.println("failed to open config file for writing");
+  }
+  serializeJson(doc, Serial);
+  Serial.println("");
+  serializeJson(doc, configFile);
+  configFile.close();
+  SPIFFS.end();
+}
+
+void loadConfiguration() {
+  if (!SPIFFS.begin()) {
+    Serial.println(F("Unable to start SPIFFS"));
+    while (1) {
+      delay(1000);
+    }
+  } else {
+    Serial.println(F("mounted file system"));
+
+    if (SPIFFS.exists("/conf.json")) {
+      //file exists, reading and loading
+      Serial.println("reading config file");
+
+      File configFile = SPIFFS.open("/conf.json", "r");
+      if (configFile) {
+        Serial.println(F("opened config file"));
+        size_t sizec = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[sizec]);
+
+        configFile.readBytes(buf.get(), sizec);
+        DynamicJsonDocument doc(1024);
+        DeserializationError error = deserializeJson(doc, buf.get());
+        if (error) {
+          Serial.println("failed to load json config");
+        } else {
+          strcpy(token, doc["token"]);
+          custom_token.setValue(token);
+        }
+        configFile.close();
+
+      }
+    } else {
+      Serial.println(F("Config file not found"));
+    }
+    SPIFFS.end();
+  }
+}
+
+void startWiFi(boolean showParams = false) {
+ 
+  wc.setDebug(true);
+
+  wc.setSaveConfigCallback(saveConfigCallback);
+  wc.setAPCallback(configModeCallback);
+
+  wc.addParameter(&custom_token);
+  //wc.resetSettings(); //helper to remove the stored wifi connection, comment out after first upload and re upload
+
+    /*
+       AP_NONE = Continue executing code
+       AP_LOOP = Trap in a continuous loop - Device is useless
+       AP_RESET = Restart the chip
+       AP_WAIT  = Trap in a continuous loop with captive portal until we have a working WiFi connection
+    */
+    if (!wc.autoConnect()) { // try to connect to wifi
+      wc.startConfigurationPortal(AP_WAIT);//if not connected show the configuration portal
+    }
+}
+
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) {
+    delay(100);
+  }
+  Serial.println("....");
+  Serial.println("....");
+  delay (5000);
+  loadConfiguration();
+  startWiFi();
+  Serial.println(token);
+  
   myBot.setClock("CET-1CEST,M3.5.0,M10.5.0/3");
   
-  // Set the Telegram bot properies
   myBot.setUpdateTime(1000);
   myBot.setTelegramToken(token);
 
-  // Check if all things are ok
   Serial.print("\nTest Telegram connection... ");
   myBot.begin() ? Serial.println("OK") : Serial.println("NOK");
 
-  // set the pin connected to the LED to act as output pin
   pinMode(LED, OUTPUT);
   digitalWrite(LED, HIGH); // turn off the led (inverted logic!)
 
 }
 
 void loop() {
-  // a variable to store telegram message data
+  delay(100);
+  if (configNeedsSaving) {
+    saveConfiguration();
+  }
+    
+  
+  // Wifi Dies? Start Portal Again
+  if (WiFi.status() != WL_CONNECTED) {
+    if (!wc.autoConnect()) wc.startConfigurationPortal(AP_WAIT);
+  }
+  
   TBMessage msg;
 
   // if there is an incoming message...
@@ -97,5 +186,5 @@ void loop() {
       myBot.sendMessage(msg, msg.text);             // echo
     }
   }
-  
+
 }
