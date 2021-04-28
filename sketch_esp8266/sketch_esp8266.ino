@@ -192,6 +192,10 @@ void loop() {
       String reply = String(val);
       myBot.sendMessage(msg, reply);
     }
+    else if (msg.text.equalsIgnoreCase("\/id")) {        // if the received message is "LIGHT OFF"...
+      String reply = "Chat id = " + String(msg.sender.id);
+      myBot.sendMessage(msg, reply);
+    }
     else if (msg.text.equalsIgnoreCase("\/start")) {        // if the received message is "LIGHT OFF"...
       // generate the message for the sender
       String reply;
