@@ -13,6 +13,8 @@ int admin_id = 69748375;
 const uint8_t LED = LED_BUILTIN;
 const uint8_t LED_GREEN = 12;
 const uint8_t LED_RED = 15;
+const uint8_t BUTTON_PIN = 4;    
+
 
 const uint8_t analogPin = A0;
 int val = 0;
@@ -132,6 +134,7 @@ void setup() {
   pinMode(LED_RED, OUTPUT);
   digitalWrite(LED, HIGH); // turn off the led (inverted logic!)
   digitalWrite(LED_RED, HIGH); // turn on the red led 
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   while (!Serial) {
     delay(100);
@@ -161,6 +164,7 @@ void setup() {
 }
 
 void loop() {
+  int btn_Status = HIGH;
   delay(100);
   if (configNeedsSaving) {
     saveConfiguration();
@@ -170,6 +174,13 @@ void loop() {
   // Wifi Dies? Start Portal Again
   if (WiFi.status() != WL_CONNECTED) {
     if (!wc.autoConnect()) wc.startConfigurationPortal(AP_WAIT);
+  }
+
+  btn_Status = digitalRead (BUTTON_PIN);  
+  if (btn_Status == LOW) {   
+    TBMessage alarmMsg;
+    alarmMsg.sender.id = admin_id;
+    myBot.sendMessage(alarmMsg, "Alarm button pressed!");
   }
   
   TBMessage msg;
