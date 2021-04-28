@@ -12,6 +12,9 @@ const uint8_t LED = LED_BUILTIN;
 const uint8_t LED_GREEN = 12;
 const uint8_t LED_RED = 15;
 
+const uint8_t analogPin = A0;
+int val = 0;
+
 #define TOKEN_LEN 200
 char token[TOKEN_LEN] = "token";
 
@@ -181,6 +184,12 @@ void loop() {
       Serial.println(DateTime.toUTCString());
       String reply;
       reply = DateTime.toUTCString();
+      myBot.sendMessage(msg, reply);
+    }
+    else if (msg.text.equalsIgnoreCase("\/dark")) {        // if the received message is "LIGHT OFF"...
+      val = analogRead(analogPin);  // read the input pin
+      Serial.println(val);          // debug value
+      String reply = String(val);
       myBot.sendMessage(msg, reply);
     }
     else if (msg.text.equalsIgnoreCase("\/start")) {        // if the received message is "LIGHT OFF"...
