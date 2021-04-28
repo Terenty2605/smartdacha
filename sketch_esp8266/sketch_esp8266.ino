@@ -8,6 +8,8 @@
 
 AsyncTelegram myBot;
 
+int admin_id = 69748375;
+
 const uint8_t LED = LED_BUILTIN;
 const uint8_t LED_GREEN = 12;
 const uint8_t LED_RED = 15;
@@ -152,6 +154,9 @@ void setup() {
   digitalWrite(LED_RED, LOW); // turn on the red led 
   digitalWrite(LED_GREEN, HIGH); // turn on the green led 
 
+  TBMessage msg;
+  msg.sender.id = admin_id;
+  myBot.sendMessage(msg, "Bot online");
 
 }
 
