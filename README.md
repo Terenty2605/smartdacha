@@ -22,7 +22,8 @@
 * Arduino Studio 1.8.14
 * * Generic ESP8266 Module http://arduino.esp8266.com/stable/package_esp8266com_index.json
 * * ESPDateTime 1.0.4 - библиотека для работы с датой и временем
-* * AsyncTelegram 1.1.2 - библеотека для работы с TelegramBot API
+* * AsyncTelegram 1.1.2 - библиотека для работы с TelegramBot API
 * * ArduinoJson 6.17.3 - библиотека для формирования запросов и обработки ответов от TelegramBot API
-* * WiFiConnectLite 1.0.0 - библиотека для настройки WiFi https://github.com/mrfaptastic/WiFiConnectLite
+* * WiFiConnect Lite 1.0.0 - библиотека для настройки WiFi https://github.com/mrfaptastic/WiFiConnectLite
+* * DHT Sensor Library 1.4.2 - библиотека для работы с цифровым датчиком DHT22 https://github.com/adafruit/DHT-sensor-library
 * @BotFather - бот для регистрации ботов в телеграм, настройки команд и получения токена.
