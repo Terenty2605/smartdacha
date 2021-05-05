@@ -19,7 +19,7 @@ const uint8_t PIR_PIN = 0;
 
 
 const uint8_t analogPin = A0;
-int val = 0, temp;
+int val = 0, temp, pir_state = HIGH;
 
 #define TOKEN_LEN 200
 char token[TOKEN_LEN] = "token";
@@ -193,12 +193,20 @@ void loop() {
   }
 
   pir_Status = digitalRead (PIR_PIN);  
-  if (pir_Status == LOW) {   
+  if (pir_Status != pir_state) {   
     TBMessage alarmMsg;
-    alarmMsg.sender.id = admin1_id;
-    myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
-    alarmMsg.sender.id = admin2_id;
-    myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
+    if (pir_Status == HIGH) {
+      alarmMsg.sender.id = admin1_id;
+      myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
+      alarmMsg.sender.id = admin2_id;
+      myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
+    } else {
+      alarmMsg.sender.id = admin1_id;
+      myBot.sendMessage(alarmMsg, "Движение прекратилось!");
+      alarmMsg.sender.id = admin2_id;
+      myBot.sendMessage(alarmMsg, "Движение прекратилось!");
+    }
+    pir_state = pir_Status;
   }
 
   
@@ -223,7 +231,7 @@ void loop() {
     }
     else if (msg.text.equalsIgnoreCase("\/temp")) {         // if the received message is "LIGHT OFF"...
       val = analogRead(analogPin);                          // read the input pin
-      temp = (val/1023.0)*5.0*1000/10;
+      temp = val/10.6;
       Serial.println(temp);                                 // debug value
       String reply = String(temp);
       myBot.sendMessage(msg, reply);
