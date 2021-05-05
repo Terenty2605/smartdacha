@@ -46,7 +46,6 @@ void configModeCallback(WiFiConnect *mWiFiConnect) {
   Serial.println("Entering Access Point");
 }
 
-/* Save our custom parameters */
 void saveConfiguration() {
   configNeedsSaving = false;
   if (!SPIFFS.begin()) {
@@ -83,14 +82,14 @@ void loadConfiguration() {
     Serial.println(F("mounted file system"));
 
     if (SPIFFS.exists("/conf.json")) {
-                                                            //file exists, reading and loading
+                                                                                                              
       Serial.println("reading config file");
 
       File configFile = SPIFFS.open("/conf.json", "r");
       if (configFile) {
         Serial.println(F("opened config file"));
         size_t sizec = configFile.size();
-                                                            // Allocate a buffer to store contents of the file.
+                                                                                                                    
         std::unique_ptr<char[]> buf(new char[sizec]);
 
         configFile.readBytes(buf.get(), sizec);
@@ -120,53 +119,47 @@ void startWiFi(boolean showParams = false) {
   wc.setAPCallback(configModeCallback);
 
   wc.addParameter(&custom_token);
-  //wc.resetSettings(); //helper to remove the stored wifi connection, comment out after first upload and re upload
-
-    /*
-       AP_NONE = Continue executing code
-       AP_LOOP = Trap in a continuous loop - Device is useless
-       AP_RESET = Restart the chip
-       AP_WAIT  = Trap in a continuous loop with captive portal until we have a working WiFi connection
-    */
-    if (!wc.autoConnect()) { // try to connect to wifi
-      wc.startConfigurationPortal(AP_WAIT);//if not connected show the configuration portal
-    }
+  //wc.resetSettings();                                     // Команда для очистки внутренней флеш-памяти
+                                                            // helper to remove the stored wifi connection, comment out after first upload and re upload
+  if (!wc.autoConnect()) {                                  // Автоматическая попытка подключиться к wifi
+      wc.startConfigurationPortal(AP_WAIT);                 // Если не удалось - открытие меню конфигурации wifi
+  }
 }
 
 
 void setup() {
-  Serial.begin(115200);
-  pinMode(LED, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-  pinMode(LED_RED, OUTPUT);
-  digitalWrite(LED, HIGH);                                  // turn off the led (inverted logic!)
-  digitalWrite(LED_RED, HIGH);                              // turn on the red led 
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(PIR_PIN, INPUT);
-  dht.begin();
+  Serial.begin(115200);                                     // Настройка серийных портов отладки                                
+  pinMode(LED, OUTPUT);                                     // Настойка выходов светодиодов - отдельно синий канал
+  pinMode(LED_GREEN, OUTPUT);                               // Многоцветный зеленый канал
+  pinMode(LED_RED, OUTPUT);                                 // Многоцветный красный канал
+  digitalWrite(LED, HIGH);                                  // Выключение синего светодиода (обратная логика!)
+  digitalWrite(LED_RED, HIGH);                              // Включение светодиода (прямая логика)
+  pinMode(BUTTON_PIN, INPUT_PULLUP);                        // Пин (контакт) для тревожной кнопки
+  pinMode(PIR_PIN, INPUT);                                  // Пин для датчика движения
+  dht.begin();                                              // Инициализируем библиотеку цифрового датчика температуры и влажности
 
-  while (!Serial) {
+  while (!Serial) {                                         // Ожидаем пока откроется серийный порт (таймаут 100 мс)
     delay(100);
   }
   Serial.println("....");
   Serial.println("....");
   delay (5000);
-  loadConfiguration();
-  startWiFi();
+  loadConfiguration();                                      // Пытаемся загрузить конфигурацию из флеш-памяти
+  startWiFi();                                              // Вызываем функцию запуска wifi
   Serial.println(token);
   
-  myBot.setClock("CET-1CEST,M3.5.0,M10.5.0/3");
+  myBot.setClock("CET-1CEST,M3.5.0,M10.5.0/3");             // Перед началом работы синхронизируем внутренние часы в сервером времени в интернете
   
-  myBot.setUpdateTime(1000);
-  myBot.setTelegramToken(token);
+  myBot.setUpdateTime(1000);                                // Частота считывания сообщений в Telegram боте (1000мс = 1с)
+  myBot.setTelegramToken(token);                            // Запуск бота с определенным токеном
 
   Serial.print("\nTest Telegram connection... ");
   myBot.begin() ? Serial.println("OK") : Serial.println("NOK");
 
-  digitalWrite(LED_RED, LOW);                               // turn on the red led 
-  digitalWrite(LED_GREEN, HIGH);                            // turn on the green led 
+  digitalWrite(LED_RED, LOW);                               // Выключение красного светодиода
+  digitalWrite(LED_GREEN, HIGH);                            // Включение зеленого светодиода
 
-  TBMessage msg;
+  TBMessage msg;                                            // Отправляем двум админам сообщение, что бот в сети
   msg.sender.id = admin1_id;
   myBot.sendMessage(msg, "Bot online");
   msg.sender.id = admin2_id;
@@ -174,23 +167,23 @@ void setup() {
 
 }
 
-void loop() {
+void loop() {                                               // Главный цикл работы бота
   int btn_Status = HIGH;
   int pir_Status = HIGH;
   delay(100);
-  if (configNeedsSaving) {
+  if (configNeedsSaving) {                                  // Если конфигурация изменилась - (bot api token) сохранить на флеш-память
     saveConfiguration();
   }
     
-  float h = dht.readHumidity();
+  float h = dht.readHumidity();                             // Считываем температуру и влажность
   float t = dht.readTemperature();
                                                             
-  if (WiFi.status() != WL_CONNECTED) {
+  if (WiFi.status() != WL_CONNECTED) {                      // Если wifi не подключен - открытие меню конфигурации wifi
     if (!wc.autoConnect()) wc.startConfigurationPortal(AP_WAIT);
   }
 
-  btn_Status = digitalRead (BUTTON_PIN);  
-  if (btn_Status == LOW) {   
+  btn_Status = digitalRead (BUTTON_PIN);                    // Обработка статуса тревожной кнопки
+  if (btn_Status == LOW) {                                  // Если кнопка нажата - сообщить двум админам
     TBMessage alarmMsg;
     alarmMsg.sender.id = admin1_id;
     myBot.sendMessage(alarmMsg, "Сработала тревожная кнопка!");
@@ -198,68 +191,68 @@ void loop() {
     myBot.sendMessage(alarmMsg, "Сработала тревожная кнопка!");
   }
 
-  pir_Status = digitalRead (PIR_PIN);  
-  if (pir_Status != pir_state) {   
+  pir_Status = digitalRead (PIR_PIN);                       // Обработка статуса датчика движения
+  if (pir_Status != pir_state) {                            // Если статус не совпадает с предыдущим
     TBMessage alarmMsg;
-    if (pir_Status == HIGH) {
+    if (pir_Status == HIGH) {                               // И датчик только что сработал
       alarmMsg.sender.id = admin1_id;
       myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
       alarmMsg.sender.id = admin2_id;
       myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
-    } else {
+    } else {                                                // Или датчик отключился
       alarmMsg.sender.id = admin1_id;
       myBot.sendMessage(alarmMsg, "Движение прекратилось!");
       alarmMsg.sender.id = admin2_id;
       myBot.sendMessage(alarmMsg, "Движение прекратилось!");
     }
-    pir_state = pir_Status;
+    pir_state = pir_Status;                                 // Сохраняем предыдущее состояние
   }
 
   
   TBMessage msg;
 
-                                                            // if there is an incoming message...
+                                                            // Если появилось входящее сообщение...
   if (myBot.getNewMessage(msg)) {
 
-    if (msg.text.equalsIgnoreCase("\/on")) {                // if the received message is "LIGHT ON"...
-      digitalWrite(LED, LOW);                               // turn on the LED (inverted logic!)
-      myBot.sendMessage(msg, "Light is now ON");            // notify the sender
+    if (msg.text.equalsIgnoreCase("\/on")) {                // Если полученное сообщение /on...
+      digitalWrite(LED, LOW);                               // Включение отдельного синего светодиода (обратная логика!)
+      myBot.sendMessage(msg, "Сейчас свет (реле) включен"); // Необходимо уведомить отправителя
     }
-    else if (msg.text.equalsIgnoreCase("\/off")) {          // if the received message is "LIGHT OFF"...
-      digitalWrite(LED, HIGH);                              // turn off the led (inverted logic!)
-      myBot.sendMessage(msg, "Light is now OFF");           // notify the sender
+    else if (msg.text.equalsIgnoreCase("\/off")) {          // Если полученное сообщение /off...
+      digitalWrite(LED, HIGH);                              // Выключение светодиода (обратная логика!)
+      myBot.sendMessage(msg, "Сейчас свет (реле) выключен");// Необходимо уведомить отправителя
     }
-    else if (msg.text.equalsIgnoreCase("\/time")) {         // if the received message is "LIGHT OFF"...
+    else if (msg.text.equalsIgnoreCase("\/time")) {         // Если полученное сообщение /time...
       Serial.println(DateTime.toUTCString());
       String reply;
       reply = DateTime.toUTCString();
-      myBot.sendMessage(msg, reply);
+      myBot.sendMessage(msg, reply);                        // Необходимо уведомить отправителя
     }
-    else if (msg.text.equalsIgnoreCase("\/dark")) {         // if the received message is "LIGHT OFF"...
-      val = analogRead(analogPin);                          // read the input pin
-      Serial.println(val);                                 // debug value
+    else if (msg.text.equalsIgnoreCase("\/dark")) {         // Если полученное сообщение /dark...
+      val = analogRead(analogPin);                          // Считываем состояние фоторезистора аналоговое 0 - 1024              
+      Serial.println(val);                                  
       String reply = String(val);
-      myBot.sendMessage(msg, reply);
+      myBot.sendMessage(msg, reply);                        // Необходимо уведомить отправителя
     }
-    else if (msg.text.equalsIgnoreCase("\/temp")) {         // if the received message is "LIGHT OFF"...
-      String reply = "temp: "+String(t)+" humidity: "+String(h);
-      myBot.sendMessage(msg, reply);
+    else if (msg.text.equalsIgnoreCase("\/temp")) {         // Если полученное сообщение /temp...
+      String reply = "Температура: "+String(t)+" Влажность: "+String(h);
+      myBot.sendMessage(msg, reply);                        // Необходимо уведомить отправителя
     }
-    else if (msg.text.equalsIgnoreCase("\/id")) {           // if the received message is "LIGHT OFF"...
-      String reply = "Chat id = " + String(msg.sender.id);
-      myBot.sendMessage(msg, reply);
+    else if (msg.text.equalsIgnoreCase("\/id")) {           // Если полученное сообщение /id...
+      String reply = "Идентификатор чата = " + String(msg.sender.id);
+      myBot.sendMessage(msg, reply);                        // Необходимо уведомить отправителя
     }
-    else if (msg.text.equalsIgnoreCase("\/start")) {        // if the received message is "LIGHT OFF"...
-                                                            // generate the message for the sender
+    else if (msg.text.equalsIgnoreCase("\/start")) {        // Если полученное сообщение /start...
+                                                            // Создание сообщение для отправителя
       String reply;
       reply = "Приветствуем вас, " ;
-      reply += msg.sender.username;
+      reply += msg.sender.username;                         // Бот приветствует вас по вашему id (имени) в Telegram
       reply += ".\nДобро пожаловать в умного бота SmartDacha";
       reply += ".\nПожалуйста, изучите команды (значок косой черты снизу справа)";
-      myBot.sendMessage(msg, reply);                        // and send it
+      myBot.sendMessage(msg, reply);                        // Отправка
     }
-    else {                                                  // otherwise...
-      myBot.sendMessage(msg, msg.text);                     // echo
+    else {                                                  // В противном случае...
+      myBot.sendMessage(msg, msg.text);                     // Эхо-бот
     } 
   }
 
