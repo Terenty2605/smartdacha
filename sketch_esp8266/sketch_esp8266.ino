@@ -8,16 +8,18 @@
 
 AsyncTelegram myBot;
 
-int admin_id = 69748375;
+int admin1_id = 69748375;
+int admin2_id = 531808473;
 
 const uint8_t LED = LED_BUILTIN;
 const uint8_t LED_GREEN = 12;
 const uint8_t LED_RED = 15;
 const uint8_t BUTTON_PIN = 4;    
+const uint8_t PIR_PIN = 0;    
 
 
 const uint8_t analogPin = A0;
-int val = 0;
+int val = 0, temp;
 
 #define TOKEN_LEN 200
 char token[TOKEN_LEN] = "token";
@@ -76,14 +78,14 @@ void loadConfiguration() {
     Serial.println(F("mounted file system"));
 
     if (SPIFFS.exists("/conf.json")) {
-      //file exists, reading and loading
+                                                            //file exists, reading and loading
       Serial.println("reading config file");
 
       File configFile = SPIFFS.open("/conf.json", "r");
       if (configFile) {
         Serial.println(F("opened config file"));
         size_t sizec = configFile.size();
-        // Allocate a buffer to store contents of the file.
+                                                            // Allocate a buffer to store contents of the file.
         std::unique_ptr<char[]> buf(new char[sizec]);
 
         configFile.readBytes(buf.get(), sizec);
@@ -132,9 +134,11 @@ void setup() {
   pinMode(LED, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
-  digitalWrite(LED, HIGH); // turn off the led (inverted logic!)
-  digitalWrite(LED_RED, HIGH); // turn on the red led 
+  digitalWrite(LED, HIGH);                                  // turn off the led (inverted logic!)
+  digitalWrite(LED_RED, HIGH);                              // turn on the red led 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(PIR_PIN, INPUT_PULLUP);
+  pinMode(PIR_PIN, INPUT);
 
   while (!Serial) {
     delay(100);
@@ -154,24 +158,27 @@ void setup() {
   Serial.print("\nTest Telegram connection... ");
   myBot.begin() ? Serial.println("OK") : Serial.println("NOK");
 
-  digitalWrite(LED_RED, LOW); // turn on the red led 
-  digitalWrite(LED_GREEN, HIGH); // turn on the green led 
+  digitalWrite(LED_RED, LOW);                               // turn on the red led 
+  digitalWrite(LED_GREEN, HIGH);                            // turn on the green led 
 
   TBMessage msg;
-  msg.sender.id = admin_id;
+  msg.sender.id = admin1_id;
+  myBot.sendMessage(msg, "Bot online");
+  msg.sender.id = admin2_id;
   myBot.sendMessage(msg, "Bot online");
 
 }
 
 void loop() {
   int btn_Status = HIGH;
+  int pir_Status = HIGH;
   delay(100);
   if (configNeedsSaving) {
     saveConfiguration();
   }
     
   
-  // Wifi Dies? Start Portal Again
+                                                            // Wifi Dies? Start Portal Again
   if (WiFi.status() != WL_CONNECTED) {
     if (!wc.autoConnect()) wc.startConfigurationPortal(AP_WAIT);
   }
@@ -179,50 +186,64 @@ void loop() {
   btn_Status = digitalRead (BUTTON_PIN);  
   if (btn_Status == LOW) {   
     TBMessage alarmMsg;
-    alarmMsg.sender.id = admin_id;
-    myBot.sendMessage(alarmMsg, "Alarm button pressed!");
+    alarmMsg.sender.id = admin1_id;
+    myBot.sendMessage(alarmMsg, "Сработала тревожная кнопка!");
+    alarmMsg.sender.id = admin2_id;
+    myBot.sendMessage(alarmMsg, "Сработала тревожная кнопка!");
   }
+
+  pir_Status = digitalRead (PIR_PIN);  
+  if (pir_Status == LOW) {   
+    TBMessage alarmMsg;
+    alarmMsg.sender.id = admin1_id;
+    myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
+    alarmMsg.sender.id = admin2_id;
+    myBot.sendMessage(alarmMsg, "Сработал датчик движения!");
+  }
+
   
   TBMessage msg;
 
-  // if there is an incoming message...
+                                                            // if there is an incoming message...
   if (myBot.getNewMessage(msg)) {
 
-    if (msg.text.equalsIgnoreCase("\/on")) {      // if the received message is "LIGHT ON"...
-      digitalWrite(LED, LOW);                           // turn on the LED (inverted logic!)
-      myBot.sendMessage(msg, "Light is now ON");        // notify the sender
+    if (msg.text.equalsIgnoreCase("\/on")) {                // if the received message is "LIGHT ON"...
+      digitalWrite(LED, LOW);                               // turn on the LED (inverted logic!)
+      myBot.sendMessage(msg, "Light is now ON");            // notify the sender
     }
-    else if (msg.text.equalsIgnoreCase("\/off")) {        // if the received message is "LIGHT OFF"...
-      digitalWrite(LED, HIGH);                          // turn off the led (inverted logic!)
-      myBot.sendMessage(msg, "Light is now OFF");       // notify the sender
+    else if (msg.text.equalsIgnoreCase("\/off")) {          // if the received message is "LIGHT OFF"...
+      digitalWrite(LED, HIGH);                              // turn off the led (inverted logic!)
+      myBot.sendMessage(msg, "Light is now OFF");           // notify the sender
     }
-    else if (msg.text.equalsIgnoreCase("\/time")) {        // if the received message is "LIGHT OFF"...
+    else if (msg.text.equalsIgnoreCase("\/time")) {         // if the received message is "LIGHT OFF"...
       Serial.println(DateTime.toUTCString());
       String reply;
       reply = DateTime.toUTCString();
       myBot.sendMessage(msg, reply);
     }
-    else if (msg.text.equalsIgnoreCase("\/dark")) {        // if the received message is "LIGHT OFF"...
-      val = analogRead(analogPin);  // read the input pin
-      Serial.println(val);          // debug value
-      String reply = String(val);
+    else if (msg.text.equalsIgnoreCase("\/temp")) {         // if the received message is "LIGHT OFF"...
+      val = analogRead(analogPin);                          // read the input pin
+      temp = (val/1023.0)*5.0*1000/10;
+      Serial.println(temp);                                 // debug value
+      String reply = String(temp);
       myBot.sendMessage(msg, reply);
     }
-    else if (msg.text.equalsIgnoreCase("\/id")) {        // if the received message is "LIGHT OFF"...
+    else if (msg.text.equalsIgnoreCase("\/id")) {           // if the received message is "LIGHT OFF"...
       String reply = "Chat id = " + String(msg.sender.id);
       myBot.sendMessage(msg, reply);
     }
     else if (msg.text.equalsIgnoreCase("\/start")) {        // if the received message is "LIGHT OFF"...
-      // generate the message for the sender
+                                                            // generate the message for the sender
       String reply;
-      reply = "Welcome " ;
+      reply = "Приветствуем вас, " ;
       reply += msg.sender.username;
-      reply += ".\nTry \/on or \/off (case insensitive)";
-      myBot.sendMessage(msg, reply);             // and send it
+      reply += ".\nДобро пожаловать в умного бота SmartDacha";
+      reply += ".\nПожалуйста, изучите команды (значок косой черты снизу справа)";
+      myBot.sendMessage(msg, reply);                        // and send it
     }
-    else {                                                    // otherwise...
-      myBot.sendMessage(msg, msg.text);             // echo
-    }
+    else {                                                  // otherwise...
+      myBot.sendMessage(msg, msg.text);                     // echo
+    } 
   }
 
 }
