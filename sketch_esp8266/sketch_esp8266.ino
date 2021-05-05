@@ -5,6 +5,7 @@
 #include <WiFiConnectParam.h>
 #include <ESPDateTime.h>
 #include <AsyncTelegram.h>
+#include <DHT.h>
 
 AsyncTelegram myBot;
 
@@ -16,7 +17,11 @@ const uint8_t LED_GREEN = 12;
 const uint8_t LED_RED = 15;
 const uint8_t BUTTON_PIN = 4;    
 const uint8_t PIR_PIN = 0;    
+const uint8_t DHT_PIN = 5;    
 
+#define DHT_TYPE DHT22   
+
+DHT dht(DHT_PIN, DHT_TYPE);
 
 const uint8_t analogPin = A0;
 int val = 0, temp, pir_state = HIGH;
@@ -137,8 +142,8 @@ void setup() {
   digitalWrite(LED, HIGH);                                  // turn off the led (inverted logic!)
   digitalWrite(LED_RED, HIGH);                              // turn on the red led 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(PIR_PIN, INPUT_PULLUP);
   pinMode(PIR_PIN, INPUT);
+  dht.begin();
 
   while (!Serial) {
     delay(100);
@@ -177,8 +182,9 @@ void loop() {
     saveConfiguration();
   }
     
-  
-                                                            // Wifi Dies? Start Portal Again
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+                                                            
   if (WiFi.status() != WL_CONNECTED) {
     if (!wc.autoConnect()) wc.startConfigurationPortal(AP_WAIT);
   }
@@ -229,11 +235,14 @@ void loop() {
       reply = DateTime.toUTCString();
       myBot.sendMessage(msg, reply);
     }
-    else if (msg.text.equalsIgnoreCase("\/temp")) {         // if the received message is "LIGHT OFF"...
+    else if (msg.text.equalsIgnoreCase("\/dark")) {         // if the received message is "LIGHT OFF"...
       val = analogRead(analogPin);                          // read the input pin
-      temp = val/10.6;
-      Serial.println(temp);                                 // debug value
-      String reply = String(temp);
+      Serial.println(val);                                 // debug value
+      String reply = String(val);
+      myBot.sendMessage(msg, reply);
+    }
+    else if (msg.text.equalsIgnoreCase("\/temp")) {         // if the received message is "LIGHT OFF"...
+      String reply = "temp: "+String(t)+" humidity: "+String(h);
       myBot.sendMessage(msg, reply);
     }
     else if (msg.text.equalsIgnoreCase("\/id")) {           // if the received message is "LIGHT OFF"...
