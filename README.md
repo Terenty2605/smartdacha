@@ -15,7 +15,7 @@
 ## Железо
 * Witty Cloud - ESP8266 Development board
 * HC-SR501 - PIR датчик движения 
-* DHT11 - датчик влажности и температуры 
+* DHT22 - датчик влажности и температуры 
 
 ## Программное обеспечение
 * Serial port driver CH341SER
