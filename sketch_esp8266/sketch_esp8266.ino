@@ -15,11 +15,11 @@ int admin2_id = 531808473;
 const uint8_t LED = LED_BUILTIN;
 const uint8_t LED_GREEN = 12;
 const uint8_t LED_RED = 15;
-const uint8_t BUTTON_PIN = 4;    
-const uint8_t PIR_PIN = 0;    
-const uint8_t DHT_PIN = 5;    
+const uint8_t BUTTON_PIN = 4;
+const uint8_t PIR_PIN = 0;
+const uint8_t DHT_PIN = 5;
 
-#define DHT_TYPE DHT22   
+#define DHT_TYPE DHT22
 
 DHT dht(DHT_PIN, DHT_TYPE);
 
@@ -82,14 +82,14 @@ void loadConfiguration() {
     Serial.println(F("mounted file system"));
 
     if (SPIFFS.exists("/conf.json")) {
-                                                                                                              
+
       Serial.println("reading config file");
 
       File configFile = SPIFFS.open("/conf.json", "r");
       if (configFile) {
         Serial.println(F("opened config file"));
         size_t sizec = configFile.size();
-                                                                                                                    
+
         std::unique_ptr<char[]> buf(new char[sizec]);
 
         configFile.readBytes(buf.get(), sizec);
@@ -112,7 +112,7 @@ void loadConfiguration() {
 }
 
 void startWiFi(boolean showParams = false) {
- 
+
   wc.setDebug(true);
 
   wc.setSaveConfigCallback(saveConfigCallback);
@@ -120,7 +120,6 @@ void startWiFi(boolean showParams = false) {
 
   wc.addParameter(&custom_token);
   //wc.resetSettings();                                     // Команда для очистки внутренней флеш-памяти
-                                                            // helper to remove the stored wifi connection, comment out after first upload and re upload
   if (!wc.autoConnect()) {                                  // Автоматическая попытка подключиться к wifi
       wc.startConfigurationPortal(AP_WAIT);                 // Если не удалось - открытие меню конфигурации wifi
   }
@@ -147,9 +146,9 @@ void setup() {
   loadConfiguration();                                      // Пытаемся загрузить конфигурацию из флеш-памяти
   startWiFi();                                              // Вызываем функцию запуска wifi
   Serial.println(token);
-  
+
   myBot.setClock("CET-1CEST,M3.5.0,M10.5.0/3");             // Перед началом работы синхронизируем внутренние часы в сервером времени в интернете
-  
+
   myBot.setUpdateTime(1000);                                // Частота считывания сообщений в Telegram боте (1000мс = 1с)
   myBot.setTelegramToken(token);                            // Запуск бота с определенным токеном
 
@@ -161,9 +160,9 @@ void setup() {
 
   TBMessage msg;                                            // Отправляем двум админам сообщение, что бот в сети
   msg.sender.id = admin1_id;
-  myBot.sendMessage(msg, "Bot online");
+  myBot.sendMessage(msg, "Бот в сети");
   msg.sender.id = admin2_id;
-  myBot.sendMessage(msg, "Bot online");
+  myBot.sendMessage(msg, "Бот в сети");
 
 }
 
@@ -174,12 +173,12 @@ void loop() {                                               // Главный ц
   if (configNeedsSaving) {                                  // Если конфигурация изменилась - (bot api token) сохранить на флеш-память
     saveConfiguration();
   }
-    
+
   float h = dht.readHumidity();                             // Считываем температуру и влажность
   float t = dht.readTemperature();
-                                                            
+
   if (WiFi.status() != WL_CONNECTED) {                      // Если wifi не подключен - открытие меню конфигурации wifi
-    if (!wc.autoConnect()) wc.startConfigurationPortal(AP_WAIT);
+  if (!wc.autoConnect()) wc.startConfigurationPortal(AP_WAIT);
   }
 
   btn_Status = digitalRead (BUTTON_PIN);                    // Обработка статуса тревожной кнопки
@@ -208,7 +207,7 @@ void loop() {                                               // Главный ц
     pir_state = pir_Status;                                 // Сохраняем предыдущее состояние
   }
 
-  
+
   TBMessage msg;
 
                                                             // Если появилось входящее сообщение...
@@ -229,13 +228,13 @@ void loop() {                                               // Главный ц
       myBot.sendMessage(msg, reply);                        // Необходимо уведомить отправителя
     }
     else if (msg.text.equalsIgnoreCase("\/dark")) {         // Если полученное сообщение /dark...
-      val = analogRead(analogPin);                          // Считываем состояние фоторезистора аналоговое 0 - 1024              
-      Serial.println(val);                                  
+      val = analogRead(analogPin);                          // Считываем состояние фоторезистора аналоговое 0 - 1024
+      Serial.println(val);
       String reply = String(val);
       myBot.sendMessage(msg, reply);                        // Необходимо уведомить отправителя
     }
     else if (msg.text.equalsIgnoreCase("\/temp")) {         // Если полученное сообщение /temp...
-      String reply = "Температура: "+String(t)+" Влажность: "+String(h);
+      String reply = "\nТемпература: "+String(t)+"\nВлажность: "+String(h);
       myBot.sendMessage(msg, reply);                        // Необходимо уведомить отправителя
     }
     else if (msg.text.equalsIgnoreCase("\/id")) {           // Если полученное сообщение /id...
@@ -252,7 +251,8 @@ void loop() {                                               // Главный ц
       myBot.sendMessage(msg, reply);                        // Отправка
     }
     else {                                                  // В противном случае...
-      myBot.sendMessage(msg, msg.text);                     // Эхо-бот
+      String reply = "Извините, я еще не умею распознавать человеческую речь, пожалуйста, используйте команды.";
+      myBot.sendMessage(msg, reply);
     } 
   }
 
